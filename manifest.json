@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Resu.mk",
+  "description": "Reads job postings & your profile to tailor your resume.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Resu.mk"
+  },
+  "permissions": ["storage", "scripting", "activeTab"],
+  "host_permissions": [
+    "*://*.linkedin.com/*",
+    "*://*.indeed.com/*",
+    "*://*.lever.co/*",
+    "*://*.greenhouse.io/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+        "matches": ["*://*/in/*"],
+        "js": ["universalScript.js"],
+        "run_at": "document_idle"
+    },
+    {
+        "matches": [
+        "*://*.linkedin.com/jobs/view/*",
+        "*://*.indeed.com/viewjob*",
+        "*://*.lever.co/*",
+        "*://*.greenhouse.io/*"
+        ],
+        "js": ["universalScript.js"],
+        "run_at": "document_idle"
+    }
+    ]
+
+}

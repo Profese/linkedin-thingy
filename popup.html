@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Resu.mk</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <!-- Background layers -->
+    <div class="bg gradient"></div>
+    <div class="bg noise"></div>
+
+    <div class="shell">
+      <!-- Header -->
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">
+            <!-- Minimal monogram -->
+            <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
+              <defs>
+                <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#6E77F1" />
+                  <stop offset="100%" stop-color="#8EE3F5" />
+                </linearGradient>
+              </defs>
+              <circle cx="12" cy="12" r="10" fill="url(#g)" opacity="0.25"/>
+              <path d="M7 16V8h4.5a3 3 0 1 1 0 6H9.2M14 8l3 8" stroke="url(#g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="title">
+            <h1>Resu.<span class="mk">mk</span></h1>
+            <div class="subtitle">Professional resume lab</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="themeToggle" class="iconbtn" title="Toggle theme">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/>
+            </svg>
+          </button>
+          <button id="openInTab" class="iconbtn" title="Open in tab">
+            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M14 3h7v7h-2V6.41L10.41 15 9 13.59 17.59 5H14V3z"/><path fill="currentColor" d="M5 5h6v2H7v10h10v-4h2v6H5z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Tabs -->
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="capture" role="tab">Capture</button>
+        <button class="tab" data-tab="analyze" role="tab">Analyze</button>
+        <button class="tab" data-tab="compose" role="tab">Compose</button>
+        <button class="tab" data-tab="export" role="tab">Export</button>
+      </nav>
+
+      <!-- Panels -->
+      <main class="panels">
+        <!-- Capture -->
+        <section class="panel active" id="panel-capture">
+          <div class="grid two">
+            <div class="card">
+              <h2>1. Save LinkedIn Profile</h2>
+              <p class="muted">Open your LinkedIn profile, then click below.</p>
+              <button id="scrapeProfileBtn" class="btn primary">Save My Profile</button>
+              <div id="profileStatus" class="status"></div>
+
+              <div class="kv">
+                <div><span>Profile saved</span><strong id="profileSaved">No</strong></div>
+                <div><span>Experiences</span><strong id="profileExpCount">0</strong></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h2>2. Scrape Job Page</h2>
+              <p class="muted">Open a job posting on LinkedIn, Indeed, Lever, or Greenhouse.</p>
+              <button id="scrapeJobBtn" class="btn">Scrape Job</button>
+              <div id="jobStatus" class="status"></div>
+              <div class="jobpeek">
+                <div><span>Title</span><strong id="peekTitle">—</strong></div>
+                <div><span>Company</span><strong id="peekCompany">—</strong></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Analyze -->
+        <section class="panel" id="panel-analyze">
+          <div class="grid two">
+            <div class="card">
+              <h2>JD vs Profile overlap</h2>
+              <div class="gauge">
+                <svg viewBox="0 0 120 60" class="donut">
+                  <defs>
+                    <linearGradient id="gradGauge" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stop-color="#6E77F1"></stop>
+                      <stop offset="100%" stop-color="#8EE3F5"></stop>
+                    </linearGradient>
+                  </defs>
+                  <path d="M10,60 A50,50 0 0,1 110,60" stroke="var(--line)" stroke-width="14" fill="none" opacity="0.25"/>
+                  <path id="gaugeArc" d="M10,60 A50,50 0 0,1 110,60" stroke="url(#gradGauge)" stroke-width="14" fill="none" stroke-linecap="round" stroke-dasharray="157 157" stroke-dashoffset="157"/>
+                  <text x="60" y="45" text-anchor="middle" class="glabel"><tspan id="gaugeVal">0</tspan>%</text>
+                </svg>
+              </div>
+              <div class="chips" id="missingSkills"></div>
+            </div>
+
+            <div class="card">
+              <h2>Diff preview</h2>
+              <div class="diff">
+                <div>
+                  <h3>Profile bullet</h3>
+                  <pre id="diffLeft">—</pre>
+                </div>
+                <div>
+                  <h3>JD-aligned</h3>
+                  <pre id="diffRight">—</pre>
+                </div>
+              </div>
+              <div class="row">
+                <button id="regenBullet" class="btn small">Regenerate</button>
+                <button id="acceptBullet" class="btn small primary">Accept</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Compose -->
+        <section class="panel" id="panel-compose">
+          <div class="grid two">
+            <div class="card">
+              <h2>Template</h2>
+              <div class="templates">
+                <label><input type="radio" name="tpl" value="classic" checked /> Classic</label>
+                <label><input type="radio" name="tpl" value="compact" /> Compact</label>
+                <label><input type="radio" name="tpl" value="modern" /> Modern</label>
+              </div>
+              <div class="row">
+                <button id="composeResume" class="btn primary">Compose LaTeX</button>
+                <span id="composeStatus" class="status"></span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h2>LaTeX preview</h2>
+              <textarea id="latexPreview" rows="12" spellcheck="false" readonly placeholder="LaTeX will appear here..."></textarea>
+              <div class="row">
+                <button id="copyLatex" class="btn small">Copy</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Export -->
+        <section class="panel" id="panel-export">
+          <div class="grid one">
+            <div class="card">
+              <h2>Export</h2>
+              <p class="muted">Download the LaTeX or a ready PDF. PDF compile can be done locally or by your backend.</p>
+              <div class="row">
+                <button id="downloadTex" class="btn">Download .tex</button>
+                <button id="downloadPdf" class="btn primary">Download .pdf</button>
+              </div>
+              <div id="exportStatus" class="status"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Toasts -->
+      <div id="toast"></div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
