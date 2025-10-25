@@ -185,3 +185,31 @@ textarea {
   --card: rgba(255,255,255,.6);
   --line: #4456ff;
 }
+.missing-summary, .recs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.missing-item {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+.missing-item span { color: var(--muted); }
+.missing-item strong { color: var(--ink); }
+
+.recs .rec {
+  background: linear-gradient(90deg, rgba(110,119,241,.15), rgba(142,227,245,.15));
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--ink);
+}

@@ -91,34 +91,59 @@ scrapeProfileBtn.addEventListener("click", async () => {
 });
 
 /* 2) Scrape job */
-scrapeJobBtn.addEventListener("click", async () => {
-  jobStatus.textContent = "Scraping job page...";
-  const [tab] = await activeTab();
-  if (!tab?.id) return;
+scrapeProfileBtn.addEventListener("click", async () => {
+  profileStatus.textContent = "Checking page...";
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-  const resp = await send(tab.id, { type: "SCRAPE_JOB" });
-  if (!resp?.ok) {
-    jobStatus.textContent = "Open a job page and try again.";
-    toast("Job not found");
+  if (!tab?.url) {
+    profileStatus.textContent = "No active tab found.";
+    toast("No active tab found");
     return;
   }
-  chrome.storage.local.set({ jobData: resp.data });
-  jobStatus.textContent = "Job captured";
-  peekTitle.textContent = resp.data.title || "—";
-  peekCompany.textContent = resp.data.company || "—";
-  toast("Job captured");
 
-  // Simulated analysis visuals on Analyze tab
-  // Your backend will compute real values. We mimic here for demo polish.
-  const score = simulateScore(resp.data);
-  animateGauge(score);
-  renderChips(["GD&T", "ANSYS", "MATLAB"].slice(0, Math.max(0, 3 - Math.floor(score/40))));
-  diffLeft.textContent = "Led composite layups and FEA validation for aero package.";
-  diffRight.innerHTML = highlightDiff(
-    "Led composite layups and FEA validation for aero package.",
-    "Led composite layups, GD&T tolerancing, and ANSYS FEA validation for aero package per ASME Y14.5."
-  );
+  const url = tab.url;
+  const isLinkedInProfile = /^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9-_%]+\/?$/.test(url);
+
+  // If not a LinkedIn profile
+  if (!isLinkedInProfile) {
+    profileStatus.textContent = "Please open a LinkedIn profile first.";
+    toast("❌ Not a valid LinkedIn profile link.");
+    return;
+  }
+
+  // Send to backend
+  profileStatus.textContent = "Sending profile to server...";
+  toast("Uploading profile link...");
+
+  try {
+    const resp = await fetch("https://your-backend-url/api/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url })
+    });
+
+    if (!resp.ok) throw new Error("Server returned " + resp.status);
+
+    const data = await resp.json();
+
+    if (data.success) {
+      profileStatus.textContent = "Profile saved successfully.";
+      profileSaved.textContent = "Yes";
+      profileExpCount.textContent = data.experienceCount ?? 0;
+      toast("✅ Profile saved!");
+      chrome.storage.local.set({ profileData: data });
+    } else {
+      profileStatus.textContent = "Server error.";
+      toast("⚠️ Could not save profile. Try again.");
+    }
+
+  } catch (err) {
+    console.error(err);
+    profileStatus.textContent = "Connection failed.";
+    toast("❌ Network or backend error.");
+  }
 });
+
 
 /* Simulated score for wow factor */
 function simulateScore(job) {
@@ -145,6 +170,45 @@ function renderChips(arr) {
     el.textContent = s;
     missingSkills.appendChild(el);
   });
+}
+
+function analyzeProfileCompleteness(profile, job) {
+  const result = { missing: [], recs: [] };
+
+  if (!profile || !job) return result;
+
+  const profileSkills = (profile.skills || []).map(s => s.toLowerCase());
+  const jobText = (job.desc || "").toLowerCase();
+
+  // Detect missing skills
+  const keywords = ["python","matlab","ansys","cad","solidworks","autocad","manufacturing",
+                    "leadership","teamwork","data","analysis","project","simulation","testing"];
+  const missingSkills = keywords.filter(k => jobText.includes(k) && !profileSkills.includes(k));
+  if (missingSkills.length) result.missing.push({ field: "Skills", items: missingSkills });
+
+  // Education check
+  if (!profile.education || profile.education.length === 0) {
+    result.missing.push({ field: "Education", items: ["No education info found"] });
+    result.recs.push("Add at least one education entry — employers often filter by degree.");
+  }
+
+  // Experience check
+  if (!profile.experiences || profile.experiences.length < 2) {
+    result.missing.push({ field: "Experience", items: ["Too few experiences"] });
+    result.recs.push("List 2–3 most relevant experiences with metrics (impact, %, etc.).");
+  }
+
+  // About section
+  if (!profile.about || profile.about.trim().length < 100) {
+    result.missing.push({ field: "About", items: ["Too short or missing"] });
+    result.recs.push("Write a 2–3 line summary that aligns with the role: include domain, tools, and achievements.");
+  }
+
+  // Suggest based on job keywords
+  if (missingSkills.length)
+    result.recs.push(`Add these to your Skills: ${missingSkills.join(", ")}`);
+
+  return result;
 }
 
 /* Tiny inline diff highlighter */

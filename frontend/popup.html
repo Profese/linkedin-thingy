@@ -85,44 +85,35 @@
 
         <!-- Analyze -->
         <section class="panel" id="panel-analyze">
-          <div class="grid two">
+        <div class="grid one">
             <div class="card">
-              <h2>JD vs Profile overlap</h2>
-              <div class="gauge">
+            <h2>Profile vs Job Match</h2>
+
+            <div class="gaugebox">
+                <div class="gauge">
                 <svg viewBox="0 0 120 60" class="donut">
-                  <defs>
+                    <defs>
                     <linearGradient id="gradGauge" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stop-color="#6E77F1"></stop>
-                      <stop offset="100%" stop-color="#8EE3F5"></stop>
+                        <stop offset="0%" stop-color="#6E77F1"></stop>
+                        <stop offset="100%" stop-color="#8EE3F5"></stop>
                     </linearGradient>
-                  </defs>
-                  <path d="M10,60 A50,50 0 0,1 110,60" stroke="var(--line)" stroke-width="14" fill="none" opacity="0.25"/>
-                  <path id="gaugeArc" d="M10,60 A50,50 0 0,1 110,60" stroke="url(#gradGauge)" stroke-width="14" fill="none" stroke-linecap="round" stroke-dasharray="157 157" stroke-dashoffset="157"/>
-                  <text x="60" y="45" text-anchor="middle" class="glabel"><tspan id="gaugeVal">0</tspan>%</text>
+                    </defs>
+                    <path d="M10,60 A50,50 0 0,1 110,60" stroke="var(--line)" stroke-width="14" fill="none" opacity="0.25"/>
+                    <path id="gaugeArc" d="M10,60 A50,50 0 0,1 110,60" stroke="url(#gradGauge)" stroke-width="14" fill="none" stroke-linecap="round" stroke-dasharray="157 157" stroke-dashoffset="157"/>
+                    <text x="60" y="45" text-anchor="middle" class="glabel"><tspan id="gaugeVal">0</tspan>%</text>
                 </svg>
-              </div>
-              <div class="chips" id="missingSkills"></div>
+                </div>
             </div>
 
-            <div class="card">
-              <h2>Diff preview</h2>
-              <div class="diff">
-                <div>
-                  <h3>Profile bullet</h3>
-                  <pre id="diffLeft">—</pre>
-                </div>
-                <div>
-                  <h3>JD-aligned</h3>
-                  <pre id="diffRight">—</pre>
-                </div>
-              </div>
-              <div class="row">
-                <button id="regenBullet" class="btn small">Regenerate</button>
-                <button id="acceptBullet" class="btn small primary">Accept</button>
-              </div>
+            <h3>Missing Elements</h3>
+            <div id="missingSummary" class="missing-summary"></div>
+
+            <h3>Recommended Additions</h3>
+            <div id="recommendations" class="recs"></div>
             </div>
-          </div>
+        </div>
         </section>
+
 
         <!-- Compose -->
         <section class="panel" id="panel-compose">
