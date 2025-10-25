@@ -1,6 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Resu.mk",
+  "version": "1.0.0",
   "description": "Reads job postings & your profile to tailor your resume.",
   "action": {
     "default_popup": "popup.html",
@@ -11,27 +12,27 @@
     "*://*.linkedin.com/*",
     "*://*.indeed.com/*",
     "*://*.lever.co/*",
-    "*://*.greenhouse.io/*"
+    "*://*.greenhouse.io/*",
+    "http://127.0.0.1:8000/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
-        "matches": ["*://*/in/*"],
-        "js": ["universalScript.js"],
-        "run_at": "document_idle"
+      "matches": ["*://*/in/*"],
+      "js": ["universalScript.js"],
+      "run_at": "document_idle"
     },
     {
-        "matches": [
+      "matches": [
         "*://*.linkedin.com/jobs/view/*",
         "*://*.indeed.com/viewjob*",
         "*://*.lever.co/*",
         "*://*.greenhouse.io/*"
-        ],
-        "js": ["universalScript.js"],
-        "run_at": "document_idle"
+      ],
+      "js": ["universalScript.js"],
+      "run_at": "document_idle"
     }
-    ]
-
+  ]
 }
