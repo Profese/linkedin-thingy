@@ -1,6 +1,22 @@
 // Elements
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Create Supabase client only if the helper and config are available. If not,
+// keep `supabase` null so the popup can still load and attach event handlers
+// (avoids ReferenceError on missing globals during development).
+let supabase = null;
+try {
+  if (typeof createClient !== "undefined" && typeof SUPABASE_URL !== "undefined" && typeof SUPABASE_ANON_KEY !== "undefined") {
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+} catch (e) {
+  console.warn("Supabase client not initialized:", e);
+}
+
+// Backend URL fallback — read from `window.BACKEND_URL` to avoid referencing
+// the same const during initialization (which would cause a TDZ ReferenceError).
+const BACKEND_URL = (typeof window !== "undefined" && typeof window.BACKEND_URL !== "undefined" && window.BACKEND_URL)
+  ? window.BACKEND_URL
+  : "http://127.0.0.1:8000";
 
 const tabs = document.querySelectorAll(".tab");
 const panels = document.querySelectorAll(".panel");
@@ -9,7 +25,6 @@ const scrapeProfileBtn = document.getElementById("scrapeProfileBtn");
 const profileStatus = document.getElementById("profileStatus");
 const profileSaved = document.getElementById("profileSaved");
 const profileExpCount = document.getElementById("profileExpCount");
-
 const scrapeJobBtn = document.getElementById("scrapeJobBtn");
 const jobStatus = document.getElementById("jobStatus");
 const peekTitle = document.getElementById("peekTitle");
