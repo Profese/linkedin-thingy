@@ -10,6 +10,14 @@ from fastapi.responses import JSONResponse
 from tempfile import TemporaryDirectory
 from fastapi.responses import StreamingResponse
 import ollama
+from jobspy import scrape_linkedin_url_to_json
+
+
+import asyncio
+from typing import List
+from pydantic import BaseModel
+from playwright.async_api import async_playwright
+
 
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
@@ -86,6 +94,7 @@ class JobPayload(BaseModel):
     company: Optional[str] = None
     desc: Optional[str] = None
     keywords: List[str] = Field(default_factory=list)
+
 
 class ComposeRequest(BaseModel):
     profile: ProfilePayload
@@ -411,12 +420,29 @@ def upsert_profile(link: UrlPayload):
     }
 
 @app.post("/api/job")
-def save_job(job: JobPayload):
+def save_job(lol: UrlPayload):
     """
     Stores the scraped job posting for later analysis / compose.
     """
+    i = 0
+
+    while i < 10:
+        try:
+            job = client.scrape_linkedin.jobs(lol.url)
+
+            # skip if payload is empty or has 'snapshot_id'
+            if job and isinstance(job, dict) and "snapshot_id" not in job:
+                break
+            else:
+                print("⚠️ Snapshot or invalid data returned, retrying...")
+            i += 1
+        except Exception as e:
+            print("❌ Error:", e)
+        i += 1
+
+    newlist = extract_keywords_from_job_desc(job.description)
     resp = supabase.table("jobs").insert({
-        "title": job.title, "company": job.company, "desc": job.desc
+        "title": job.title, "company": job.company, "desc": job.description, "keywords": newlist
     }).execute()
     if resp.error:
         raise HTTPException(status_code=500, detail=resp.error.message)
@@ -426,7 +452,7 @@ def upload_pdf_to_supabase(file_path: str, file_name: str) -> str:
     """Upload a PDF file to Supabase Storage and return its public URL."""
     bucket = "resumes"
 
-    # Ensure filename is unique & safe
+    # Ensure filename is unique & safe533333333333333333333333333333333333333333333333333333333333333333333333333333333333333333
     base_name = os.path.basename(file_name).replace(" ", "_")
     remote_path = f"{bucket}/{base_name}"
 
