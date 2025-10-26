@@ -1,4 +1,7 @@
 // Elements
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 const tabs = document.querySelectorAll(".tab");
 const panels = document.querySelectorAll(".panel");
 
@@ -71,26 +74,7 @@ async function send(tabId, message) {
   });
 }
 
-/* 1) Save profile */
-scrapeProfileBtn.addEventListener("click", async () => {
-  profileStatus.textContent = "Scraping profile...";
-  const [tab] = await activeTab();
-  if (!tab?.id) return;
-
-  const resp = await send(tab.id, { type: "SCRAPE_PROFILE" });
-  if (!resp?.ok) {
-    profileStatus.textContent = "Open your LinkedIn profile and try again.";
-    toast("Profile not found");
-    return;
-  }
-  chrome.storage.local.set({ profileData: resp.data });
-  profileStatus.textContent = "Profile saved";
-  profileSaved.textContent = "Yes";
-  profileExpCount.textContent = resp.data?.experiences?.length ?? 0;
-  toast("Profile captured");
-});
-
-/* 2) Scrape job */
+/* 1) Scrape and send LinkedIn profile */
 scrapeProfileBtn.addEventListener("click", async () => {
   profileStatus.textContent = "Checking page...";
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -104,7 +88,6 @@ scrapeProfileBtn.addEventListener("click", async () => {
   const url = tab.url;
   const isLinkedInProfile = /^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9-_%]+\/?$/.test(url);
 
-  // If not a LinkedIn profile
   if (!isLinkedInProfile) {
     profileStatus.textContent = "Please open a LinkedIn profile first.";
     toast("❌ Not a valid LinkedIn profile link.");
@@ -116,7 +99,7 @@ scrapeProfileBtn.addEventListener("click", async () => {
   toast("Uploading profile link...");
 
   try {
-    const resp = await fetch("https://your-backend-url/api/profile", {
+    const resp = await fetch("http://127.0.0.1:8000/api/profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url })
@@ -144,6 +127,38 @@ scrapeProfileBtn.addEventListener("click", async () => {
   }
 });
 
+scrapeJobBtn.addEventListener("click", async () => {
+  jobStatus.textContent = "Scanning job page...";
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  const [result] = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => {
+      const title = document.querySelector("h1")?.innerText || "";
+      const company = document.querySelector(".topcard__org-name-link, .job-details-jobs-unified-top-card__company-name")?.innerText || "";
+      const desc = document.body.innerText.slice(0, 5000);
+      return { title, company, desc };
+    },
+  });
+
+  try {
+    const resp = await fetch(`${BACKEND_URL}/api/job`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(result.result)
+    });
+
+    const data = await resp.json();
+    if (data.success) {
+      jobStatus.textContent = `✅ Job saved: ${result.result.title}`;
+      chrome.storage.local.set({ jobData: result.result });
+      toast("Job captured");
+    }
+  } catch (err) {
+    console.error(err);
+    jobStatus.textContent = "❌ Backend error.";
+  }
+});
 
 /* Simulated score for wow factor */
 function simulateScore(job) {
