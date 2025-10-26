@@ -16,7 +16,7 @@ try {
 // the same const during initialization (which would cause a TDZ ReferenceError).
 const BACKEND_URL = (typeof window !== "undefined" && typeof window.BACKEND_URL !== "undefined" && window.BACKEND_URL)
   ? window.BACKEND_URL
-  : "http://127.0.0.1:8000";
+  : "http://127.0.0.1:8000/";
 
 const tabs = document.querySelectorAll(".tab");
 const panels = document.querySelectorAll(".panel");
@@ -277,10 +277,41 @@ downloadTex.addEventListener("click", () => {
   exportStatus.textContent = "Saved .tex";
   toast(".tex downloaded");
 });
-downloadPdf.addEventListener("click", () => {
-  // Frontend cannot compile to PDF alone. Call your backend if available.
-  exportStatus.textContent = "PDF generation requires backend compile. Use .tex or wire server.";
-  toast("Use backend to compile PDF");
+downloadPdf.addEventListener("click", async () => {
+  exportStatus.textContent = "Generating PDF...";
+  const { profileData, jobData } = await chrome.storage.local.get(["profileData", "jobData"]);
+
+  if (!profileData || !jobData) {
+    toast("Capture profile and job first");
+    exportStatus.textContent = "Profile or job missing";
+    return;
+  }
+
+  try {
+    const resp = await fetch("http://127.0.0.1:8000/api/compile-pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile: profileData, job: jobData }),
+    });
+
+    if (!resp.ok) throw new Error("Server returned " + resp.status);
+
+    // Download the returned PDF
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "resu.mk_resume.pdf";
+    a.click();
+    URL.revokeObjectURL(url);
+
+    exportStatus.textContent = "✅ PDF downloaded";
+    toast("PDF ready!");
+  } catch (err) {
+    console.error(err);
+    exportStatus.textContent = "❌ Failed to generate PDF";
+    toast("Backend error — check console");
+  }
 });
 
 /* File utils */
