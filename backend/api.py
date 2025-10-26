@@ -296,20 +296,57 @@ def upsert_profile(link: UrlPayload):
     )
 
     # 3) Upsert base profile row
-    prof_resp = supabase.table("profiles").upsert(
-        {
-            "linkedin_url": profile.linkedin_url,
-            "full_name": profile.name,
-            "headline": profile.headline,
-            "location": profile.location,
-        },
-        on_conflict="linkedin_url",
-    ).select("*").execute()
+    # Some Supabase/PostgREST setups require a unique constraint for ON CONFLICT
+    # upserts. If the DB doesn't have that constraint, using on_conflict will
+    # raise a 42P10 error. To be compatible with more schemas, do a
+    # simple find-then-update/insert based on linkedin_url. If linkedin_url is
+    # not provided, always insert a new profile.
 
-    if getattr(prof_resp, "error", None):
-        raise HTTPException(status_code=500, detail=f"profiles upsert failed: {prof_resp.error.message}")
+    prof_row = None
+    if profile.linkedin_url:
+        # try to find an existing profile with this linkedin_url
+        find_resp = supabase.table("profiles").select("id").eq("linkedin_url", profile.linkedin_url).execute()
+        if getattr(find_resp, "error", None):
+            raise HTTPException(status_code=500, detail=f"profiles lookup failed: {find_resp.error.message}")
+        if find_resp.data:
+            # update existing row
+            existing_id = find_resp.data[0]["id"]
+            update_resp = supabase.table("profiles").update(
+                {
+                    "full_name": profile.name,
+                    "headline": profile.headline,
+                    "location": profile.location,
+                }
+            ).eq("id", existing_id).execute()
+            if getattr(update_resp, "error", None):
+                raise HTTPException(status_code=500, detail=f"profiles update failed: {update_resp.error.message}")
+            prof_row = (update_resp.data or [None])[0] or {"id": existing_id}
+        else:
+            # insert new
+            insert_resp = supabase.table("profiles").insert(
+                {
+                    "linkedin_url": profile.linkedin_url,
+                    "full_name": profile.name,
+                    "headline": profile.headline,
+                    "location": profile.location,
+                }
+            ).execute()
+            if getattr(insert_resp, "error", None):
+                raise HTTPException(status_code=500, detail=f"profiles insert failed: {insert_resp.error.message}")
+            prof_row = (insert_resp.data or [None])[0]
+    else:
+        # no linkedin_url provided, always insert
+        insert_resp = supabase.table("profiles").insert(
+            {
+                "full_name": profile.name,
+                "headline": profile.headline,
+                "location": profile.location,
+            }
+        ).execute()
+        if getattr(insert_resp, "error", None):
+            raise HTTPException(status_code=500, detail=f"profiles insert failed: {insert_resp.error.message}")
+        prof_row = (insert_resp.data or [None])[0]
 
-    prof_row = (prof_resp.data or [None])[0]
     if not prof_row:
         raise HTTPException(status_code=500, detail="No profile row returned from Supabase")
 
